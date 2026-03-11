@@ -8,20 +8,19 @@ on:
   workflow_dispatch:
 
 # Note: x86 is not supported — PyQt6 has no 32-bit Windows wheels.
-# Only x64 build is possible.
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
+      - name: Enable long paths
+        run: git config --system core.longpaths true
+
       - name: Checkout repository with submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Enable long paths (required for deep Python deps)
-        run: git config --system core.longpaths true
 
       - name: Setup Python 3.9.13 (x64)
         uses: actions/setup-python@v5
@@ -34,24 +33,35 @@ jobs:
         with:
           node-version: '16.20.2'
 
-      - name: Install Poetry
-        run: pip install poetry==1.5.1
-
-      - name: Install setuptools (required workaround)
+      - name: Install setuptools
         run: pip install "setuptools>49.1.1"
 
-      # Disable Poetry virtualenv so packages install into system Python,
-      # ensuring setuptools fix above is visible during make build.
-      - name: Configure Poetry (no virtualenv)
-        run: poetry config virtualenvs.create false
-
-      - name: Build all modules
-        run: make build SKIP_SERVER_RUST=true
+      - name: Build web UI for aw-server
         shell: bash
+        run: make --directory=aw-server aw-webui
+
+      - name: Install Python modules
+        shell: bash
+        run: |
+          pip install -e aw-core
+          pip install -e aw-client
+          pip install -e aw-qt
+          pip install -e aw-server
+          pip install -e aw-watcher-afk
+          pip install -e aw-watcher-window
+          # Second pass for aw-core and aw-client (mirrors Makefile workaround)
+          pip install -e aw-client
+          pip install -e aw-core
+
+      - name: Install PyInstaller
+        shell: bash
+        run: |
+          pip install pyinstaller
+          pip install "git+https://github.com/pyinstaller/pyinstaller-hooks-contrib.git@master"
 
       - name: Package with PyInstaller
-        run: pyinstaller --clean --noconfirm aw.spec
         shell: bash
+        run: pyinstaller --clean --noconfirm aw.spec
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
