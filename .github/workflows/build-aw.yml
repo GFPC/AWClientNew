@@ -7,13 +7,12 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+# Note: x86 is not supported — PyQt6 has no 32-bit Windows wheels.
+# Only x64 build is possible.
+
 jobs:
   build:
     runs-on: windows-latest
-
-    strategy:
-      matrix:
-        arch: [x64, x86]
 
     steps:
       - name: Checkout repository with submodules
@@ -24,11 +23,11 @@ jobs:
       - name: Enable long paths (required for deep Python deps)
         run: git config --system core.longpaths true
 
-      - name: Setup Python 3.9.13 (${{ matrix.arch }})
+      - name: Setup Python 3.9.13 (x64)
         uses: actions/setup-python@v5
         with:
           python-version: '3.9.13'
-          architecture: ${{ matrix.arch }}
+          architecture: x64
 
       - name: Setup Node.js 16
         uses: actions/setup-node@v4
@@ -41,6 +40,11 @@ jobs:
       - name: Install setuptools (required workaround)
         run: pip install "setuptools>49.1.1"
 
+      # Disable Poetry virtualenv so packages install into system Python,
+      # ensuring setuptools fix above is visible during make build.
+      - name: Configure Poetry (no virtualenv)
+        run: poetry config virtualenvs.create false
+
       - name: Build all modules
         run: make build SKIP_SERVER_RUST=true
         shell: bash
@@ -52,6 +56,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: activitywatch-windows-${{ matrix.arch }}
+          name: activitywatch-windows-x64
           path: dist/activitywatch/
           retention-days: 7
