@@ -8,7 +8,7 @@
           UpgradeCode="6C0D5E4F-3A7B-6C0D-BE4F-5A7B8C0D5E4F">
 
     <BootstrapperApplication>
-      <bal:WixStandardBootstrapperApplication Theme="minimal" />
+      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense" LicenseUrl="" />
     </BootstrapperApplication>
 
     <Chain>
