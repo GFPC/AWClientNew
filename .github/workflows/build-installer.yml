@@ -56,26 +56,54 @@ jobs:
       - name: Generate file components from dist/activitywatch
         shell: pwsh
         run: |
-          $sourceDir = "dist\activitywatch"
+          $sourceRoot = (Resolve-Path "dist\activitywatch").Path
           $ns = "http://wixtoolset.org/schemas/v4/wxs"
-          $lines = @()
-          $lines += '<?xml version="1.0" encoding="UTF-8"?>'
-          $lines += "<Wix xmlns=`"$ns`">"
-          $lines += "  <Fragment>"
-          $lines += "    <ComponentGroup Id=`"ActivityWatchFiles`" Directory=`"INSTALLFOLDER`">"
-          $index = 0
-          Get-ChildItem -Path $sourceDir -Recurse -File | ForEach-Object {
-            $compId = "comp_$index"
-            $fileId = "file_$index"
-            $index++
-            $lines += "      <Component Id=`"$compId`" Guid=`"*`">"
-            $lines += "        <File Id=`"$fileId`" Source=`"$($_.FullName)`" />"
-            $lines += "      </Component>"
+
+          # Build directory ID map: relative path -> safe XML ID
+          $dirMap = @{ "" = "INSTALLFOLDER" }
+          $dirIdx = 0
+          Get-ChildItem -Path $sourceRoot -Recurse -Directory | Sort-Object FullName | ForEach-Object {
+            $rel = $_.FullName.Substring($sourceRoot.Length + 1)
+            $dirMap[$rel] = "d$dirIdx"
+            $dirIdx++
           }
-          $lines += "    </ComponentGroup>"
-          $lines += "  </Fragment>"
-          $lines += "</Wix>"
-          $lines | Out-File -FilePath "installer\HarvestedFiles.wxs" -Encoding utf8
+
+          $xml = [System.Collections.Generic.List[string]]::new()
+          $xml.Add('<?xml version="1.0" encoding="UTF-8"?>')
+          $xml.Add("<Wix xmlns=`"$ns`">")
+          $xml.Add("  <Fragment>")
+
+          # Emit directory tree under INSTALLFOLDER
+          $xml.Add("    <DirectoryRef Id=`"INSTALLFOLDER`">")
+          Get-ChildItem -Path $sourceRoot -Recurse -Directory | Sort-Object FullName | ForEach-Object {
+            $rel    = $_.FullName.Substring($sourceRoot.Length + 1)
+            $id     = $dirMap[$rel]
+            $name   = $_.Name
+            $depth  = ($rel.Split('\') | Measure-Object).Count + 1
+            $pad    = "  " * $depth
+            $xml.Add("$pad<Directory Id=`"$id`" Name=`"$name`" />")
+          }
+          $xml.Add("    </DirectoryRef>")
+          $xml.Add("")
+
+          # Emit one component per file, placed in correct directory
+          $xml.Add("    <ComponentGroup Id=`"ActivityWatchFiles`">")
+          $fileIdx = 0
+          Get-ChildItem -Path $sourceRoot -Recurse -File | ForEach-Object {
+            $rel    = $_.FullName.Substring($sourceRoot.Length + 1)
+            $dirRel = [IO.Path]::GetDirectoryName($rel)
+            $dirId  = if ($dirRel) { $dirMap[$dirRel] } else { "INSTALLFOLDER" }
+            $xml.Add("      <Component Id=`"c$fileIdx`" Directory=`"$dirId`" Guid=`"*`">")
+            $xml.Add("        <File Id=`"f$fileIdx`" Source=`"$($_.FullName)`" />")
+            $xml.Add("      </Component>")
+            $fileIdx++
+          }
+          $xml.Add("    </ComponentGroup>")
+          $xml.Add("  </Fragment>")
+          $xml.Add("</Wix>")
+
+          $xml | Out-File -FilePath "installer\HarvestedFiles.wxs" -Encoding utf8
+          Write-Host "Generated $fileIdx file components across $dirIdx directories"
 
       - name: Build MSI
         run: |
