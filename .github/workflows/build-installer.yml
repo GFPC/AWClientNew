@@ -57,7 +57,7 @@ jobs:
         shell: pwsh
         run: |
           $sourceRoot = (Resolve-Path "dist\activitywatch").Path
-          $ns = "http://wixtoolset.org/schemas/v4/wxs"
+          $wixNs = "http://wixtoolset.org/schemas/v4/wxs"
 
           # Build directory ID map: relative path -> safe XML ID
           $dirMap = @{ "" = "INSTALLFOLDER" }
@@ -68,41 +68,65 @@ jobs:
             $dirIdx++
           }
 
-          $xml = [System.Collections.Generic.List[string]]::new()
-          $xml.Add('<?xml version="1.0" encoding="UTF-8"?>')
-          $xml.Add("<Wix xmlns=`"$ns`">")
-          $xml.Add("  <Fragment>")
+          # Use XmlDocument to build properly nested directory tree
+          $doc = New-Object System.Xml.XmlDocument
+          $doc.AppendChild($doc.CreateXmlDeclaration("1.0","UTF-8",$null)) | Out-Null
+          $wix = $doc.CreateElement("Wix", $wixNs)
+          $doc.AppendChild($wix) | Out-Null
+          $frag = $doc.CreateElement("Fragment", $wixNs)
+          $wix.AppendChild($frag) | Out-Null
 
-          # Emit directory tree under INSTALLFOLDER
-          $xml.Add("    <DirectoryRef Id=`"INSTALLFOLDER`">")
+          # Build nested Directory tree using a node map
+          $nodeMap = @{ "" = $null }  # rel path -> XmlNode (null = use DirectoryRef)
+          $dirRef = $doc.CreateElement("DirectoryRef", $wixNs)
+          $dirRef.SetAttribute("Id", "INSTALLFOLDER")
+          $frag.AppendChild($dirRef) | Out-Null
+
           Get-ChildItem -Path $sourceRoot -Recurse -Directory | Sort-Object FullName | ForEach-Object {
             $rel    = $_.FullName.Substring($sourceRoot.Length + 1)
-            $id     = $dirMap[$rel]
-            $name   = $_.Name
-            $depth  = ($rel.Split('\') | Measure-Object).Count + 1
-            $pad    = "  " * $depth
-            $xml.Add("$pad<Directory Id=`"$id`" Name=`"$name`" />")
+            $parent = [IO.Path]::GetDirectoryName($rel)
+            if (-not $parent) { $parent = "" }
+            $id   = $dirMap[$rel]
+            $name = $_.Name
+            $dirNode = $doc.CreateElement("Directory", $wixNs)
+            $dirNode.SetAttribute("Id", $id)
+            $dirNode.SetAttribute("Name", $name)
+            $parentNode = if ($parent -eq "") { $dirRef } else { $nodeMap[$parent] }
+            $parentNode.AppendChild($dirNode) | Out-Null
+            $nodeMap[$rel] = $dirNode
           }
-          $xml.Add("    </DirectoryRef>")
-          $xml.Add("")
 
-          # Emit one component per file, placed in correct directory
-          $xml.Add("    <ComponentGroup Id=`"ActivityWatchFiles`">")
+          # Build ComponentGroup with one component per file
+          $cg = $doc.CreateElement("ComponentGroup", $wixNs)
+          $cg.SetAttribute("Id", "ActivityWatchFiles")
+          $frag.AppendChild($cg) | Out-Null
+
           $fileIdx = 0
           Get-ChildItem -Path $sourceRoot -Recurse -File | ForEach-Object {
             $rel    = $_.FullName.Substring($sourceRoot.Length + 1)
             $dirRel = [IO.Path]::GetDirectoryName($rel)
-            $dirId  = if ($dirRel) { $dirMap[$dirRel] } else { "INSTALLFOLDER" }
-            $xml.Add("      <Component Id=`"c$fileIdx`" Directory=`"$dirId`" Guid=`"*`">")
-            $xml.Add("        <File Id=`"f$fileIdx`" Source=`"$($_.FullName)`" />")
-            $xml.Add("      </Component>")
+            if (-not $dirRel) { $dirRel = "" }
+            $dirId  = $dirMap[$dirRel]
+
+            $comp = $doc.CreateElement("Component", $wixNs)
+            $comp.SetAttribute("Id", "c$fileIdx")
+            $comp.SetAttribute("Directory", $dirId)
+            $comp.SetAttribute("Guid", "*")
+
+            $fileEl = $doc.CreateElement("File", $wixNs)
+            $fileEl.SetAttribute("Id", "f$fileIdx")
+            $fileEl.SetAttribute("Source", $_.FullName)
+            $comp.AppendChild($fileEl) | Out-Null
+            $cg.AppendChild($comp) | Out-Null
             $fileIdx++
           }
-          $xml.Add("    </ComponentGroup>")
-          $xml.Add("  </Fragment>")
-          $xml.Add("</Wix>")
 
-          $xml | Out-File -FilePath "installer\HarvestedFiles.wxs" -Encoding utf8
+          $settings = New-Object System.Xml.XmlWriterSettings
+          $settings.Indent = $true
+          $settings.Encoding = [System.Text.Encoding]::UTF8
+          $writer = [System.Xml.XmlWriter]::Create("installer\HarvestedFiles.wxs", $settings)
+          $doc.Save($writer)
+          $writer.Close()
           Write-Host "Generated $fileIdx file components across $dirIdx directories"
 
       - name: Build MSI
