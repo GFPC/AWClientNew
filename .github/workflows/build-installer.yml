@@ -53,18 +53,10 @@ jobs:
           wix extension add WixToolset.UI.wixext
           wix extension add WixToolset.Bal.wixext
 
-      - name: Harvest files from dist/activitywatch
-        run: |
-          wix harvest dir dist/activitywatch `
-            --component-group ActivityWatchFiles `
-            --directory-ref INSTALLFOLDER `
-            --var var.SourceDir `
-            -o installer/HarvestedFiles.wxs
-
       - name: Build MSI
         run: |
-          wix build installer/Product.wxs installer/HarvestedFiles.wxs `
-            -d SourceDir=dist/activitywatch `
+          wix build installer/Product.wxs `
+            -bindpath SourceDir=dist/activitywatch `
             -ext WixToolset.UI.wixext `
             -o OTGuruAgent.msi
 

@@ -9,7 +9,7 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of OTGuru Agent is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
-    <!-- Install directory -->
+    <!-- Install directory: C:\Program Files\OTGuruAgent\ -->
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="OTGuruAgent" />
     </StandardDirectory>
@@ -24,8 +24,14 @@
       <ComponentRef Id="StartMenuShortcut" />
     </Feature>
 
+    <!-- All files from dist/activitywatch/ harvested via bindpath -->
+    <ComponentGroup Id="ActivityWatchFiles" Directory="INSTALLFOLDER">
+      <Files Include="!(bindpath.SourceDir)\**" />
+    </ComponentGroup>
+
     <!-- Start Menu shortcut component -->
-    <Component Id="StartMenuShortcut" Directory="AppMenuFolder" Guid="5B9C4D3E-2F6A-5B9C-AD3E-4F6A7B9C4D3E">
+    <Component Id="StartMenuShortcut" Directory="AppMenuFolder"
+               Guid="5B9C4D3E-2F6A-5B9C-AD3E-4F6A7B9C4D3E">
       <Shortcut Id="AppShortcut"
                 Name="OTGuru Agent"
                 Target="[INSTALLFOLDER]aw-qt.exe"
