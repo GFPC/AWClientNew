@@ -132,12 +132,14 @@ jobs:
       - name: Build MSI
         run: |
           wix build installer/Product.wxs installer/HarvestedFiles.wxs `
+            -arch x64 `
             -ext WixToolset.UI.wixext `
             -o OTGuruAgent.msi
 
       - name: Build EXE bundle
         run: |
           wix build installer/Bundle.wxs `
+            -arch x64 `
             -ext WixToolset.Bal.wixext `
             -o agent_installer.exe
 
