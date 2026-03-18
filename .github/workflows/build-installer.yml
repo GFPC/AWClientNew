@@ -143,9 +143,16 @@ jobs:
             -ext WixToolset.Bal.wixext `
             -o agent_installer.exe
 
-      - name: Upload installer artifact
+      - name: Upload EXE bundle artifact
         uses: actions/upload-artifact@v4
         with:
           name: otguru-agent-installer
           path: agent_installer.exe
+          retention-days: 30
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: otguru-agent-msi
+          path: OTGuruAgent.msi
           retention-days: 30
