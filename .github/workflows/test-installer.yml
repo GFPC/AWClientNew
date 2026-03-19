@@ -120,7 +120,7 @@ jobs:
       - name: Check aw-server.exe starts and serves
         shell: pwsh
         run: |
-          $exe = "C:\Program Files\OTGuruAgent\aw-server\aw-server.exe"
+          $exe = "C:\Program Files\OTGuruAgent\aw-server.exe"
           Write-Host "Starting $exe ..."
           $proc = Start-Process $exe `
             -RedirectStandardOutput "aw-server-stdout.log" `

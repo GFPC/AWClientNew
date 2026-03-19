@@ -68,12 +68,11 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist/activitywatch
-          # aw-qt is the entry point — its contents go to root
-          cp -r dist/aw-qt/* dist/activitywatch/
-          # other components go as subdirectories
-          for dir in aw-server aw-watcher-afk aw-watcher-window; do
+          # All components go flat into one directory so shared DLLs (python39.dll etc.)
+          # are visible to every exe. aw-qt discovers aw-*.exe by scanning its own dir.
+          for dir in aw-qt aw-server aw-watcher-afk aw-watcher-window; do
             if [ -d "dist/$dir" ]; then
-              cp -r dist/$dir dist/activitywatch/
+              cp -rn dist/$dir/* dist/activitywatch/
             fi
           done
           echo "Contents of dist/activitywatch:"
