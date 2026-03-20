@@ -34,8 +34,11 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.run_id }}" ]; then
             echo "run_id=${{ inputs.run_id }}" >> $GITHUB_OUTPUT
-          else
+          elif [ "${{ github.event_name }}" = "workflow_run" ]; then
             echo "run_id=${{ github.event.workflow_run.id }}" >> $GITHUB_OUTPUT
+          else
+            run_id=$(gh run list --workflow=build-aw.yml --status=success --limit=1 --json databaseId --jq '.[0].databaseId')
+            echo "run_id=$run_id" >> $GITHUB_OUTPUT
           fi
 
       - name: Download activitywatch artifact
