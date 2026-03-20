@@ -26,3 +26,10 @@ __pycache__
 *.exe
 builds/
 activitywatch-windows-x64/
+
+# PyInstaller output
+aw-server/
+aw-watcher-window/
+
+# Claude Code session files
+*-command-messageinitcommand-message.txt
