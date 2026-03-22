@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     github_token: str
     github_owner: str
     github_repo: str
+
     installer_dir: str = "/data/installers"
     installer_ttl_hours: int = 72
 

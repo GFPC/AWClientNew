@@ -14,7 +14,8 @@ router = APIRouter(prefix="/builds", tags=["builds"])
 
 @router.post("", status_code=202, response_model=BuildResponse)
 async def create_build(body: BuildRequest, db: AsyncSession = Depends(get_db)):
-    config = body.model_dump(exclude_none=True)
+    installer_id = f"inst_{uuid.uuid4().hex[:8]}"
+    config = {**body.model_dump(exclude_none=True), "installer_id": installer_id}
     build = await crud.create_build(db, config)
     worker.start_build(build.id, config)
     return build

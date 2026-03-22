@@ -14,7 +14,7 @@ async def run_build(build_id: uuid.UUID, config: dict) -> None:
     """Full state machine for one build. Runs as a background task."""
     async with AsyncSessionLocal() as db:
         try:
-            inputs = {k: str(v) for k, v in config.items()}
+            inputs = {**{k: str(v) for k, v in config.items()}, "build_id": str(build_id)}
 
             dispatch_time = await github.dispatch_workflow(inputs)
             await crud.update_build(db, build_id, status="queued")

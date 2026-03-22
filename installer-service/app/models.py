@@ -36,3 +36,7 @@ class Build(Base):
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False
     )
+
+    @property
+    def installer_id(self) -> str:
+        return self.config.get("installer_id", "")

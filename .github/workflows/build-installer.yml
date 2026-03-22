@@ -1,19 +1,33 @@
 name: Build OTGuru Agent Installer
 
 on:
-  # Run automatically after successful app build
   workflow_run:
     workflows: ["Build ActivityWatch Windows EXE"]
     types: [completed]
     branches: [main, master]
-  # Allow manual trigger
   workflow_dispatch:
     inputs:
       run_id:
-        description: 'Run ID of build-aw workflow to use artifacts from (leave empty for latest)'
+        description: 'Run ID of build-aw workflow (leave empty for latest)'
         required: false
       server_url:
-        description: 'OTGuru server URL to embed in config.json'
+        description: 'OTGuru server URL'
+        required: false
+        default: ''
+      company_id:
+        description: 'Company ID'
+        required: false
+        default: ''
+      tenant_id:
+        description: 'Tenant ID'
+        required: false
+        default: ''
+      installer_id:
+        description: 'Installer ID'
+        required: false
+        default: ''
+      build_id:
+        description: 'Build UUID from installer-service'
         required: false
         default: ''
 
@@ -49,6 +63,24 @@ jobs:
           github-token: ${{ github.token }}
           run-id: ${{ steps.resolve_run.outputs.run_id }}
 
+      - name: Write config_template.json
+        shell: bash
+        run: |
+          mkdir -p dist/activitywatch
+          cat > dist/activitywatch/config_template.json <<EOF
+          {
+            "company_id": "${{ inputs.company_id }}",
+            "tenant_id": "${{ inputs.tenant_id }}",
+            "server_url": "${{ inputs.server_url }}",
+            "installer_id": "${{ inputs.installer_id }}",
+            "build_id": "${{ inputs.build_id }}"
+          }
+          EOF
+
+      - name: Copy post-install script
+        shell: bash
+        run: cp installer/post-install.ps1 dist/activitywatch/post-install.ps1
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -60,19 +92,12 @@ jobs:
           wix extension add WixToolset.UI.wixext/4.0.6
           wix extension add WixToolset.Bal.wixext/4.0.6
 
-      - name: Write config.json
-        shell: bash
-        run: |
-          mkdir -p dist/activitywatch
-          echo '{"server_url":"${{ inputs.server_url }}"}' > dist/activitywatch/config.json
-
       - name: Generate file components from dist/activitywatch
         shell: pwsh
         run: |
           $sourceRoot = (Resolve-Path "dist\activitywatch").Path
           $wixNs = "http://wixtoolset.org/schemas/v4/wxs"
 
-          # Build directory ID map: relative path -> safe XML ID
           $dirMap = @{ "" = "INSTALLFOLDER" }
           $dirIdx = 0
           Get-ChildItem -Path $sourceRoot -Recurse -Directory | Sort-Object FullName | ForEach-Object {
@@ -81,7 +106,6 @@ jobs:
             $dirIdx++
           }
 
-          # Use XmlDocument to build properly nested directory tree
           $doc = New-Object System.Xml.XmlDocument
           $doc.AppendChild($doc.CreateXmlDeclaration("1.0","UTF-8",$null)) | Out-Null
           $wix = $doc.CreateElement("Wix", $wixNs)
@@ -89,8 +113,7 @@ jobs:
           $frag = $doc.CreateElement("Fragment", $wixNs)
           $wix.AppendChild($frag) | Out-Null
 
-          # Build nested Directory tree using a node map
-          $nodeMap = @{ "" = $null }  # rel path -> XmlNode (null = use DirectoryRef)
+          $nodeMap = @{ "" = $null }
           $dirRef = $doc.CreateElement("DirectoryRef", $wixNs)
           $dirRef.SetAttribute("Id", "INSTALLFOLDER")
           $frag.AppendChild($dirRef) | Out-Null
@@ -109,7 +132,6 @@ jobs:
             $nodeMap[$rel] = $dirNode
           }
 
-          # Build ComponentGroup with one component per file
           $cg = $doc.CreateElement("ComponentGroup", $wixNs)
           $cg.SetAttribute("Id", "ActivityWatchFiles")
           $frag.AppendChild($cg) | Out-Null
@@ -144,7 +166,7 @@ jobs:
 
       - name: Build MSI
         run: |
-          wix build installer/Product.wxs installer/HarvestedFiles.wxs `
+          wix build installer/Product.wxs installer/HarvestedFiles.wxs installer/TokenDlg.wxs `
             -arch x64 `
             -ext WixToolset.UI.wixext `
             -o OTGuruAgent.msi

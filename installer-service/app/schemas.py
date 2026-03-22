@@ -5,11 +5,14 @@ from pydantic import BaseModel
 
 
 class BuildRequest(BaseModel):
+    company_id: int
+    tenant_id: str
     server_url: str = ""
 
 
 class BuildResponse(BaseModel):
     id: uuid.UUID
+    installer_id: str
     status: str
     created_at: datetime
 
