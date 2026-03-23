@@ -8,11 +8,11 @@
           UpgradeCode="6C0D5E4F-3A7B-6C0D-BE4F-5A7B8C0D5E4F">
 
     <BootstrapperApplication>
-      <bal:WixStandardBootstrapperApplication Theme="hyperlinkLicense" LicenseUrl="" />
+      <bal:WixInternalUIBootstrapperApplication />
     </BootstrapperApplication>
 
     <Chain>
-      <MsiPackage SourceFile="OTGuruAgent.msi" DisplayInternalUI="yes" />
+      <MsiPackage SourceFile="OTGuruAgent.msi" />
     </Chain>
 
   </Bundle>
