@@ -16,6 +16,8 @@
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="UserExit" />
       <DialogRef Id="WelcomeDlg" />
+      <DialogRef Id="MaintenanceWelcomeDlg" />
+      <DialogRef Id="MaintenanceTypeDlg" />
       <DialogRef Id="VerifyReadyDlg" />
 
       <!-- WelcomeDlg → TokenDlg → VerifyReadyDlg -->
@@ -31,6 +33,7 @@
       <InstallUISequence>
         <Show Dialog="ResumeDlg"    Before="ProgressDlg" Condition="Resume" />
         <Show Dialog="WelcomeDlg"   Before="ProgressDlg" Condition="NOT Installed AND NOT Resume" />
+        <Show Dialog="MaintenanceWelcomeDlg" Before="ProgressDlg" Condition="Installed AND NOT Resume" />
       </InstallUISequence>
 
       <Dialog Id="TokenDlg" Width="370" Height="270" Title="OTGuru Agent — Токен активации">

@@ -12,8 +12,9 @@
     </BootstrapperApplication>
 
     <Chain>
+      <!-- Always show MSI internal UI to avoid silent maintenance/reinstall flows -->
       <MsiPackage SourceFile="OTGuruAgent.msi"
-                  bal:DisplayInternalUICondition="WixBundleAction = 6" />
+                  bal:DisplayInternalUICondition="1" />
     </Chain>
 
   </Bundle>
