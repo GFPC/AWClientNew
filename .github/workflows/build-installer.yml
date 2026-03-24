@@ -176,20 +176,9 @@ jobs:
       - name: Dump MSI dialog sequence (debug)
         shell: pwsh
         run: |
-          $installer = New-Object -ComObject WindowsInstaller.Installer
-          $db = $installer.GetType().InvokeMember("OpenDatabase", "InvokeMethod", $null, $installer, @((Resolve-Path "OTGuruAgent.msi").Path, 0))
-          $view = $db.GetType().InvokeMember("OpenView", "InvokeMethod", $null, $db, @("SELECT Dialog_, Control_, Event, Argument, Condition, Ordering FROM ControlEvent WHERE Event='NewDialog' OR Event='SpawnDialog'"))
-          $view.GetType().InvokeMember("Execute", "InvokeMethod", $null, $view, $null)
-          Write-Host "Dialog | Control | Event | Argument | Condition | Order"
-          do {
-            $rec = $view.GetType().InvokeMember("Fetch", "InvokeMethod", $null, $view, $null)
-            if ($rec -eq $null) { break }
-            $cols = 1..6 | ForEach-Object {
-              try { $rec.GetType().InvokeMember("StringData","GetProperty",$null,$rec,@($_)) }
-              catch { $rec.GetType().InvokeMember("IntegerData","GetProperty",$null,$rec,@($_)) }
-            }
-            Write-Host ($cols -join " | ")
-          } while ($true)
+          wix msi decompile OTGuruAgent.msi -o decompiled.wxs
+          Write-Host "=== NewDialog events ==="
+          Get-Content decompiled.wxs | Select-String "NewDialog|SpawnDialog|TokenDlg|WelcomeDlg|LicenseAgreement|VerifyReady"
 
       - name: Validate MSI (silent install test)
         shell: pwsh
