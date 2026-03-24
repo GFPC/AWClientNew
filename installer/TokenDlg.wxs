@@ -29,7 +29,8 @@
       <Publish Dialog="VerifyReadyDlg" Control="Back"    Event="NewDialog"   Value="TokenDlg"       Condition="NOT Installed" />
 
       <InstallUISequence>
-        <Show Dialog="WelcomeDlg" Before="ProgressDlg" Condition="NOT Installed" />
+        <Show Dialog="ResumeDlg"    Before="ProgressDlg" Condition="Resume" />
+        <Show Dialog="WelcomeDlg"   Before="ProgressDlg" Condition="NOT Installed AND NOT Resume" />
       </InstallUISequence>
 
       <Dialog Id="TokenDlg" Width="370" Height="270" Title="OTGuru Agent — Токен активации">

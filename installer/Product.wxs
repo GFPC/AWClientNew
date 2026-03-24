@@ -12,6 +12,8 @@
 
     <UIRef Id="WixUI_OTGuru" />
 
+    <!-- Required by VerifyReadyDlg - controls linked to WIXUI_INSTALLDIR cause 2819 if missing -->
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLFOLDER" />
     <Property Id="TOKEN" Secure="yes" />
 
     <!-- Install directory: C:\Program Files\OTGuruAgent\ -->
