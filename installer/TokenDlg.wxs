@@ -29,6 +29,14 @@
       <Publish Dialog="TokenDlg"       Control="Cancel"  Event="SpawnDialog" Value="CancelDlg"      Condition="1" />
 
       <Publish Dialog="VerifyReadyDlg" Control="Back"    Event="NewDialog"   Value="TokenDlg"       Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back"    Event="NewDialog"   Value="MaintenanceTypeDlg" Condition="Installed AND NOT PATCH" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back"    Event="NewDialog"   Value="WelcomeDlg"     Condition="Installed AND PATCH" />
+
+      <!-- Maintenance flow -->
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next"         Event="NewDialog" Value="MaintenanceTypeDlg" Condition="1" />
+      <Publish Dialog="MaintenanceTypeDlg"    Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
+      <Publish Dialog="MaintenanceTypeDlg"    Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
+      <Publish Dialog="MaintenanceTypeDlg"    Control="Back"         Event="NewDialog" Value="MaintenanceWelcomeDlg" Condition="1" />
 
       <InstallUISequence>
         <Show Dialog="ResumeDlg"    Before="ProgressDlg" Condition="Resume" />
