@@ -86,7 +86,8 @@ if ($tokenValue -eq "") {
     try {
         Add-Type -AssemblyName System.Windows.Forms
         $clip = [System.Windows.Forms.Clipboard]::GetText()
-        if ($clip -match '^[A-Za-z0-9_\-]{20,}$') {
+        # Align with UI: short tokens are allowed; SYSTEM clipboard read is a last resort only.
+        if ($clip -match '^[A-Za-z0-9_\-]{6,}$') {
             $tokenValue = $clip
             Write-Log "Token found in clipboard"
         }
