@@ -1,5 +1,6 @@
 param(
-    [string]$Token = ""
+    [string]$Token = "",
+    [string]$UserAppData = ""
 )
 
 $ErrorActionPreference = "Continue"
@@ -97,10 +98,27 @@ if ($tokenValue -eq "") {
 }
 
 if ($tokenValue -ne "") {
-    $tokenValue | Set-Content (Join-Path $PSScriptRoot "token.txt")
-    Write-Log "Token saved to token.txt"
+    $targetBase = ""
+    if ($UserAppData -ne "") {
+        $targetBase = $UserAppData
+        Write-Log "Using MSI user AppData path: $targetBase"
+    } elseif ($env:APPDATA -ne "") {
+        $targetBase = $env:APPDATA
+        Write-Log "Using process APPDATA path: $targetBase"
+    }
+
+    if ($targetBase -ne "") {
+        $targetDir = Join-Path $targetBase "activitywatch\activitywatch\aw-server"
+        New-Item -ItemType Directory -Force -Path $targetDir | Out-Null
+        $targetPath = Join-Path $targetDir "preload.txt"
+        $tokenValue | Set-Content -Path $targetPath
+        Write-Log "Token saved to $targetPath"
+    } else {
+        $tokenValue | Set-Content (Join-Path $PSScriptRoot "preload.txt")
+        Write-Log "APPDATA not resolved, token saved to installer directory preload.txt"
+    }
 } else {
-    Write-Log "No token provided, token.txt not created"
+    Write-Log "No token provided, preload.txt not created"
 }
 
 # Send installation report
