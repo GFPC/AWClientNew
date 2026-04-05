@@ -1,6 +1,0 @@
-GET http://localhost:5666/api/0/gfps/user/1
-Content-Type: application/json
-
-{
-
-}
