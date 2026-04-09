@@ -165,10 +165,16 @@ jobs:
           $writer.Close()
           Write-Host "Generated $fileIdx file components across $dirIdx directories"
 
+      - name: WixUI Russian localization
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File installer/download-wix-ui-locale.ps1
+
       - name: Build MSI
         run: |
           wix build installer/Product.wxs installer/HarvestedFiles.wxs installer/TokenDlg.wxs `
             -arch x64 `
+            -culture ru-ru `
+            -loc installer/WixUI_ru-ru.wxl `
             -ext WixToolset.UI.wixext `
             -ext WixToolset.Util.wixext `
             -o OTGuruAgent.msi

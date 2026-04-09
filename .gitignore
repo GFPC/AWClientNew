@@ -24,6 +24,8 @@ __pycache__
 # Installer build artifacts
 *.msi
 *.exe
+# Fetched from WiX sources by installer/download-wix-ui-locale.ps1
+installer/WixUI_ru-ru.wxl
 builds/
 activitywatch-windows-x64/
 
