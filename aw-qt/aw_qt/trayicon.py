@@ -201,31 +201,60 @@ def exit(manager: Manager) -> None:
     QApplication.quit()
 
 
-def _bundle_search_roots() -> List[Path]:
-    """Directories that may contain media/logo (PyInstaller 6+ uses _internal/)."""
-    roots: List[Path] = []
-    scriptdir = Path(__file__).resolve().parent
-    # Dev / source tree
-    roots.append(scriptdir.parent)
-    if getattr(sys, "frozen", False):
-        exe_dir = Path(sys.executable).resolve().parent
-        roots.append(exe_dir)
-        roots.append(exe_dir / "_internal")
-        meipass = getattr(sys, "_MEIPASS", None)
-        if meipass:
-            roots.append(Path(meipass))
-    roots.append(scriptdir.parent.parent / "Resources" / "aw_qt")
+def _frozen_install_bases() -> List[Path]:
+    """Roots where PyInstaller may place media/ (never rely on __file__ alone — it can be wrong in PYZ)."""
+    bases: List[Path] = []
+    if not getattr(sys, "frozen", False):
+        return bases
+    exe_dir = Path(sys.executable).resolve().parent
+    bases.append(exe_dir)
+    bases.append(exe_dir / "_internal")
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        bases.append(Path(meipass))
     seen: Set[str] = set()
     out: List[Path] = []
-    for r in roots:
+    for b in bases:
         try:
-            key = str(r.resolve())
+            key = str(b.resolve())
         except OSError:
-            key = str(r)
+            key = str(b)
         if key not in seen:
             seen.add(key)
-            out.append(r)
+            out.append(b)
     return out
+
+
+def _try_icon_from_path(p: Path) -> Optional[QIcon]:
+    if not p.is_file():
+        return None
+    if p.suffix.lower() == ".ico":
+        ic = QIcon(str(p))
+        return ic if not ic.isNull() else None
+    pm = QPixmap(str(p))
+    if pm.isNull():
+        return None
+    ic = QIcon(pm)
+    return ic if not ic.isNull() else None
+
+
+def _discover_logo_file_frozen() -> Optional[Path]:
+    """Walk install tree shallowly for media/logo/* (handles odd flatten / CI layouts)."""
+    for base in _frozen_install_bases():
+        logo_dir = base / "media" / "logo"
+        if not logo_dir.is_dir():
+            continue
+        for name in ("logo.ico", "logo.png", "logo-128.png"):
+            p = logo_dir / name
+            if p.is_file():
+                return p
+    # e.g. logo.ico copied next to exe by mistake
+    for base in _frozen_install_bases():
+        for name in ("logo.ico", "logo.png"):
+            p = base / name
+            if p.is_file():
+                return p
+    return None
 
 
 def _load_tray_window_icon() -> QIcon:
@@ -239,24 +268,52 @@ def _load_tray_window_icon() -> QIcon:
     else:
         filenames = ("logo.png", "logo-128.png")
 
-    for root in _bundle_search_roots():
+    # Dev / source tree (unfrozen)
+    scriptdir = Path(__file__).resolve().parent
+    for root in (
+        scriptdir.parent,
+        scriptdir.parent.parent / "Resources" / "aw_qt",
+    ):
         logo_dir = root / "media" / "logo"
         for name in filenames:
             p = logo_dir / name
-            if not p.is_file():
-                continue
-            if name.endswith(".ico"):
-                ic = QIcon(str(p))
-            else:
-                pm = QPixmap(str(p))
-                ic = QIcon(pm) if not pm.isNull() else QIcon()
-            if not ic.isNull():
+            ic = _try_icon_from_path(p)
+            if ic is not None:
                 logger.info("Tray icon loaded from %s", p)
                 return ic
 
-    logger.warning(
-        "Tray icon not found under media/logo (icons: and bundle roots); tray may be invisible."
-    )
+    # Frozen: use install roots only (not __file__ — wrong for PYZ modules)
+    for base in _frozen_install_bases():
+        logo_dir = base / "media" / "logo"
+        for name in filenames:
+            p = logo_dir / name
+            ic = _try_icon_from_path(p)
+            if ic is not None:
+                logger.info("Tray icon loaded from %s", p)
+                return ic
+
+    discovered = _discover_logo_file_frozen()
+    if discovered is not None:
+        ic = _try_icon_from_path(discovered)
+        if ic is not None:
+            logger.info("Tray icon loaded (discovered) from %s", discovered)
+            return ic
+
+    # PyInstaller sets the .exe icon from logo.ico — Qt can load it from the binary on Windows.
+    if sys.platform == "win32" and getattr(sys, "frozen", False):
+        exe_path = Path(sys.executable).resolve()
+        ic_exe = QIcon(str(exe_path))
+        if not ic_exe.isNull():
+            logger.info("Tray icon loaded from application executable resource: %s", exe_path)
+            return ic_exe
+
+    if getattr(sys, "frozen", False):
+        logger.warning(
+            "Tray icon: no media/logo file and no exe icon; tried bases %s",
+            _frozen_install_bases(),
+        )
+    else:
+        logger.warning("Tray icon: no media/logo under aw-qt dev tree")
     return icon
 
 
