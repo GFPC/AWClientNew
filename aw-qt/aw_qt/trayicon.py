@@ -5,7 +5,7 @@ import subprocess
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import aw_core
 from PyQt6 import QtCore
@@ -81,7 +81,7 @@ class TrayIcon(QSystemTrayIcon):
     ) -> None:
         QSystemTrayIcon.__init__(self, icon, parent)
         self._parent = parent  # QSystemTrayIcon also tries to save parent info but it screws up the type info
-        self.setToolTip("ActivityWatch" + (" (testing)" if testing else ""))
+        self.setToolTip("CtrlDesk" + (" (testing)" if testing else ""))
 
         self.manager = manager
         self.testing = testing
@@ -200,9 +200,52 @@ def exit(manager: Manager) -> None:
     QApplication.quit()
 
 
+def _load_tray_window_icon() -> QIcon:
+    """Resolve tray icon for dev, PyInstaller onedir/onefile, and macOS .app."""
+    icon = QIcon("icons:logo.png")
+    if not icon.isNull() and icon.availableSizes():
+        return icon
+
+    candidates: List[Path] = []
+    scriptdir = Path(__file__).resolve().parent
+    candidates.append(scriptdir.parent / "media" / "logo" / "logo.png")
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        candidates.append(exe_dir / "media" / "logo" / "logo.png")
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidates.append(Path(meipass) / "media" / "logo" / "logo.png")
+    candidates.append(
+        scriptdir.parent.parent / "Resources" / "aw_qt" / "media" / "logo" / "logo.png"
+    )
+    for p in candidates:
+        if p.is_file():
+            ic = QIcon(str(p))
+            if not ic.isNull():
+                logger.info("Tray icon loaded from %s", p)
+                return ic
+    logger.warning(
+        "Tray icon logo.png not found (icons: and fallbacks); tray may be invisible on Windows."
+    )
+    return icon
+
+
 def run(manager: Manager, testing: bool = False) -> Any:
     logger.info("Creating trayicon...")
     app = QApplication(sys.argv)
+
+    # Stable id helps Windows 10/11 show the tray entry in the correct overflow group.
+    app.setApplicationName("CtrlDesk")
+    app.setOrganizationName("CtrlDesk")
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "GFPC.CtrlDesk.aw-qt.1"
+            )
+        except Exception as e:
+            logger.debug("SetCurrentProcessExplicitAppUserModelID: %s", e)
 
     # This is needed for the icons to get picked up with PyInstaller
     scriptdir = Path(__file__).parent
@@ -248,7 +291,7 @@ def run(manager: Manager, testing: bool = False) -> Any:
         # Allow macOS to use filters for changing the icon's color
         icon.setIsMask(True)
     else:
-        icon = QIcon("icons:logo.png")
+        icon = _load_tray_window_icon()
 
     trayIcon = TrayIcon(manager, icon, widget, testing=testing)
     trayIcon.show()
