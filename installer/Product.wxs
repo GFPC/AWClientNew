@@ -76,7 +76,7 @@
 
     <!-- [TOKEN] expanded when this immediate action runs (after UI) -->
     <SetProperty Id="RunPostInstall"
-                 Value="&quot;powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[INSTALLFOLDER]post-install.ps1&quot; -Token &quot;[TOKEN]&quot; -UserAppData &quot;[AppDataFolder]&quot;"
+                 Value="&quot;powershell.exe&quot; -ExecutionPolicy Bypass -NonInteractive -File &quot;[INSTALLFOLDER]post-install.ps1&quot; -Token &quot;[TOKEN]&quot; -UserAppData &quot;[LocalAppDataFolder]&quot;"
                  Sequence="execute"
                  Before="RunPostInstall" />
 

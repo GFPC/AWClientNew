@@ -101,10 +101,10 @@ if ($tokenValue -ne "") {
     $targetBase = ""
     if ($UserAppData -ne "") {
         $targetBase = $UserAppData
-        Write-Log "Using MSI user AppData path: $targetBase"
-    } elseif ($env:APPDATA -ne "") {
-        $targetBase = $env:APPDATA
-        Write-Log "Using process APPDATA path: $targetBase"
+        Write-Log "Using MSI user LocalAppData path: $targetBase"
+    } elseif ($env:LOCALAPPDATA -ne "") {
+        $targetBase = $env:LOCALAPPDATA
+        Write-Log "Using process LOCALAPPDATA path: $targetBase"
     }
 
     if ($targetBase -ne "") {
@@ -115,7 +115,7 @@ if ($tokenValue -ne "") {
         Write-Log "Token saved to $targetPath"
     } else {
         $tokenValue | Set-Content (Join-Path $PSScriptRoot "preload.txt")
-        Write-Log "APPDATA not resolved, token saved to installer directory preload.txt"
+        Write-Log "LOCALAPPDATA not resolved, token saved to installer directory preload.txt"
     }
 } else {
     Write-Log "No token provided, preload.txt not created"

@@ -361,8 +361,7 @@ def run(manager: Manager, testing: bool = False) -> Any:
         except Exception as e:
             logger.debug("SetCurrentProcessExplicitAppUserModelID: %s", e)
 
-    # Tray pixmaps on HiDPI Windows
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseHighDpiPixmaps, True)
+    # Qt 6 removed Qt.AA_UseHighDpiPixmaps; HiDPI pixmaps are default.
 
     app = QApplication(sys.argv)
 
