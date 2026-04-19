@@ -207,11 +207,18 @@ def _frozen_install_bases() -> List[Path]:
     if not getattr(sys, "frozen", False):
         return bases
     exe_dir = Path(sys.executable).resolve().parent
-    bases.append(exe_dir)
-    bases.append(exe_dir / "_internal")
+    bases.extend(
+        [
+            exe_dir,
+            exe_dir / "aw_qt",
+            exe_dir / "_internal",
+            exe_dir / "_internal" / "aw_qt",
+        ]
+    )
     meipass = getattr(sys, "_MEIPASS", None)
     if meipass:
-        bases.append(Path(meipass))
+        meipass_path = Path(meipass)
+        bases.extend([meipass_path, meipass_path / "aw_qt"])
     seen: Set[str] = set()
     out: List[Path] = []
     for b in bases:
@@ -225,17 +232,28 @@ def _frozen_install_bases() -> List[Path]:
     return out
 
 
+def _icon_has_pixmap(icon: QIcon) -> bool:
+    if icon.isNull():
+        return False
+    if icon.availableSizes():
+        return True
+    for s in (16, 20, 24, 32, 48, 64, 128, 256):
+        if not icon.pixmap(s, s).isNull():
+            return True
+    return False
+
+
 def _try_icon_from_path(p: Path) -> Optional[QIcon]:
     if not p.is_file():
         return None
     if p.suffix.lower() == ".ico":
         ic = QIcon(str(p))
-        return ic if not ic.isNull() else None
+        return ic if _icon_has_pixmap(ic) else None
     pm = QPixmap(str(p))
     if pm.isNull():
         return None
     ic = QIcon(pm)
-    return ic if not ic.isNull() else None
+    return ic if _icon_has_pixmap(ic) else None
 
 
 def _discover_logo_file_frozen() -> Optional[Path]:
@@ -303,7 +321,7 @@ def _load_tray_window_icon() -> QIcon:
     if sys.platform == "win32" and getattr(sys, "frozen", False):
         exe_path = Path(sys.executable).resolve()
         ic_exe = QIcon(str(exe_path))
-        if not ic_exe.isNull():
+        if _icon_has_pixmap(ic_exe):
             logger.info("Tray icon loaded from application executable resource: %s", exe_path)
             return ic_exe
 
@@ -327,6 +345,7 @@ def _icon_for_windows_shell_tray(icon: QIcon) -> QIcon:
         if not pm.isNull():
             out.addPixmap(pm)
     if not out.isNull():
+        logger.info("Windows tray icon sizes prepared: %s", out.availableSizes())
         return out
     for s in (128, 64, 48, 256, 32):
         pm = icon.pixmap(s, s)
@@ -341,7 +360,9 @@ def _icon_for_windows_shell_tray(icon: QIcon) -> QIcon:
             )
             out.addPixmap(sm)
         if not out.isNull():
+            logger.info("Windows tray icon sizes generated: %s", out.availableSizes())
             return out
+    logger.warning("Windows tray icon has no usable small pixmaps; sizes=%s", icon.availableSizes())
     return icon
 
 
@@ -393,6 +414,8 @@ def run(manager: Manager, testing: bool = False) -> Any:
     timer.start(100)  # You may change this if you wish.
     timer.timeout.connect(lambda: None)  # Let the interpreter run each 500 ms.
 
+    QApplication.setQuitOnLastWindowClosed(False)
+
     # root widget
     widget = QWidget()
 
@@ -413,11 +436,14 @@ def run(manager: Manager, testing: bool = False) -> Any:
         if sys.platform == "win32":
             icon = _icon_for_windows_shell_tray(icon)
 
+    app.setWindowIcon(icon)
     trayIcon = TrayIcon(manager, icon, widget, testing=testing)
     trayIcon.show()
 
-    QApplication.setQuitOnLastWindowClosed(False)
-
-    logger.info("Initialized aw-qt and trayicon successfully")
+    logger.info(
+        "Initialized aw-qt and trayicon successfully; visible=%s, icon_sizes=%s",
+        trayIcon.isVisible(),
+        icon.availableSizes(),
+    )
     # Run the application, blocks until quit
     return app.exec()
