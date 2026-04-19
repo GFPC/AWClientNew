@@ -81,6 +81,10 @@ jobs:
         shell: bash
         run: cp installer/post-install.ps1 dist/activitywatch/post-install.ps1
 
+      - name: Verify aw-qt tray icon assets in downloaded artifact
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package/verify-windows-tray-assets.ps1 -Root dist/activitywatch
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -201,6 +205,10 @@ jobs:
             exit 1
           }
           Write-Host "MSI validation passed"
+
+      - name: Verify installed aw-qt tray icon assets
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package/verify-windows-tray-assets.ps1 -Root "C:\Program Files\ctrldesk"
 
       - name: Build EXE bundle
         run: |
