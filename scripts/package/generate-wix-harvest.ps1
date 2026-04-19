@@ -7,6 +7,15 @@ if (-not (Test-Path $sourceRoot)) {
     Write-Error "Missing $sourceRoot - run build-windows-installer.ps1 first."
 }
 $sourceRoot = (Resolve-Path $sourceRoot).Path
+
+# aw-qt loads the tray icon at runtime from media/logo. The exe icon embedded by
+# PyInstaller is enough for Explorer, but is not reliable for QSystemTrayIcon.
+$mediaSrc = Join-Path $Root "aw-qt\media"
+$mediaDst = Join-Path $sourceRoot "media"
+if (Test-Path $mediaSrc) {
+    Copy-Item -Path $mediaSrc -Destination $mediaDst -Recurse -Force
+}
+
 $wixNs = "http://wixtoolset.org/schemas/v4/wxs"
 
 $dirMap = @{ "" = "INSTALLFOLDER" }
