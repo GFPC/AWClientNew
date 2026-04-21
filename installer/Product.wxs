@@ -87,7 +87,7 @@
                   Return="ignore"
                   Impersonate="no" />
 
-    <!-- Запуск aw-qt по «Готово» на ExitDlg. Путь через SetProperty — иначе WIX1077 на Property с [INSTALLFOLDER]. -->
+    <!-- Запуск aw-qt по «Готово» на ExitDialog. Путь через SetProperty — иначе WIX1077 на Property с [INSTALLFOLDER]. -->
     <SetProperty Id="WixUnelevatedShellExecTarget"
                  Value="[INSTALLFOLDER]aw-qt.exe"
                  After="InstallFinalize"
