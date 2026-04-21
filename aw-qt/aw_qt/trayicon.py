@@ -82,7 +82,6 @@ class TrayIcon(QSystemTrayIcon):
     ) -> None:
         QSystemTrayIcon.__init__(self, icon, parent)
         self._parent = parent  # QSystemTrayIcon also tries to save parent info but it screws up the type info
-        self.setToolTip("CtrlDesk" + (" (testing)" if testing else ""))
 
         self.manager = manager
         self.testing = testing
@@ -91,6 +90,16 @@ class TrayIcon(QSystemTrayIcon):
         self.activated.connect(self.on_activated)
 
         self._build_rootmenu()
+        # Initial tip (some platforms); Windows often needs a second set after show() — see show() below.
+        self.setToolTip(self._tray_tooltip())
+
+    def _tray_tooltip(self) -> str:
+        return "CtrlDesk" + (" (testing)" if self.testing else "")
+
+    def show(self) -> None:
+        super().show()
+        # Shell tray on Windows may ignore szTip until after the icon is shown (Qt NOTIFYICON).
+        self.setToolTip(self._tray_tooltip())
 
     def on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:

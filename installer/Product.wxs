@@ -87,6 +87,14 @@
                   Return="ignore"
                   Impersonate="no" />
 
+    <!-- Запуск aw-qt по «Готово» на ExitDlg (только интерактивная установка; /qn UI не показывает). Без повышения — см. WixUnelevatedShellExec. -->
+    <Property Id="WixUnelevatedShellExecTarget" Value="[INSTALLFOLDER]aw-qt.exe" />
+    <CustomAction Id="LaunchCtrlDeskAfterInstall"
+                  BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixUnelevatedShellExec"
+                  Execute="immediate"
+                  Return="ignore" />
+
     <InstallExecuteSequence>
       <Custom Action="WriteTokenToFile" Before="RunPostInstall" Condition="NOT REMOVE" />
       <Custom Action="RunPostInstall" After="InstallFiles" Condition="NOT REMOVE" />

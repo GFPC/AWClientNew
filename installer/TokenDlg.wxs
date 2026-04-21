@@ -13,6 +13,7 @@
       <DialogRef Id="MsiRMFilesInUse" />
       <DialogRef Id="PrepareDlg" />
       <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ExitDlg" />
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="UserExit" />
       <DialogRef Id="WelcomeDlg" />
@@ -37,6 +38,9 @@
       <Publish Dialog="MaintenanceTypeDlg"    Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
       <Publish Dialog="MaintenanceTypeDlg"    Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
       <Publish Dialog="MaintenanceTypeDlg"    Control="Back"         Event="NewDialog" Value="MaintenanceWelcomeDlg" Condition="1" />
+
+      <!-- Запуск aw-qt после успешной установки (тихая установка без UI сюда не попадает). Order 1 — до закрытия диалога (EndDialog). -->
+      <Publish Dialog="ExitDlg" Control="Finish" Event="DoAction" Value="LaunchCtrlDeskAfterInstall" Order="1">1</Publish>
 
       <InstallUISequence>
         <Show Dialog="ResumeDlg"    Before="ProgressDlg" Condition="Resume" />

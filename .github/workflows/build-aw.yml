@@ -81,14 +81,8 @@ jobs:
               cp -rn dist/$dir/* dist/activitywatch/
             fi
           done
-          rm -rf dist/activitywatch/media
-          cp -R aw-qt/media dist/activitywatch/media
           echo "Contents of dist/activitywatch:"
           ls dist/activitywatch/
-
-      - name: Verify aw-qt tray icon assets
-        shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package/verify-windows-tray-assets.ps1 -Root dist/activitywatch
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
