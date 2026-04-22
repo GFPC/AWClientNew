@@ -41,7 +41,8 @@
       <Publish Dialog="MaintenanceTypeDlg"    Control="Back"         Event="NewDialog" Value="MaintenanceWelcomeDlg" Condition="1" />
 
       <!-- Запуск aw-qt после успешной установки (тихая установка без UI сюда не попадает). -->
-      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchCtrlDeskAfterInstall" Order="1" Condition="NOT REMOVE" />
+      <Publish Dialog="ExitDialog" Control="Finish" Property="WixUnelevatedShellExecTarget" Value="[INSTALLFOLDER]aw-qt.exe" Order="1" Condition="NOT REMOVE" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchCtrlDeskAfterInstall" Order="2" Condition="NOT REMOVE" />
       <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" Condition="1" />
 
       <InstallUISequence>

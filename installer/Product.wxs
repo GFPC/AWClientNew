@@ -87,13 +87,8 @@
                   Return="ignore"
                   Impersonate="no" />
 
-    <!-- Запуск aw-qt по «Готово» на ExitDialog. Свойство должно устанавливаться в UI sequence,
-         иначе Execute sequence не передаст путь кнопке Finish. -->
-    <SetProperty Id="WixUnelevatedShellExecTarget"
-                 Value="[INSTALLFOLDER]aw-qt.exe"
-                 Before="LaunchCtrlDeskAfterInstall"
-                 Sequence="ui"
-                 Condition="NOT REMOVE" />
+    <!-- Запуск aw-qt по «Готово» на ExitDialog. Target выставляется из UI через Publish Property,
+         чтобы использовать актуальный INSTALLFOLDER и не ссылаться на несуществующий UI action. -->
     <CustomAction Id="LaunchCtrlDeskAfterInstall"
                   BinaryRef="Wix4UtilCA_X64"
                   DllEntry="WixUnelevatedShellExec"
