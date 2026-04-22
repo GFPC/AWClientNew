@@ -10,13 +10,14 @@ from typing import Any, Dict, List, Optional, Set
 import aw_core
 from PyQt6 import QtCore
 from PyQt6.QtCore import QCoreApplication, Qt
-from PyQt6.QtGui import QIcon, QPixmap
+from PyQt6.QtGui import QCursor, QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QMenu,
     QMessageBox,
     QPushButton,
     QSystemTrayIcon,
+    QToolTip,
     QWidget,
 )
 
@@ -85,6 +86,8 @@ class TrayIcon(QSystemTrayIcon):
 
         self.manager = manager
         self.testing = testing
+        self._hover_tip_timer: Optional[QtCore.QTimer] = None
+        self._hover_tip_visible = False
 
         self.root_url = f"http://localhost:{5666 if self.testing else 5600}"
         self.activated.connect(self.on_activated)
@@ -102,9 +105,49 @@ class TrayIcon(QSystemTrayIcon):
             # Force Explorer to refresh the tray entry first, then restore the tip.
             self.setIcon(self.icon())
             QtCore.QTimer.singleShot(0, lambda: self.setToolTip(self._tray_tooltip()))
+            self._ensure_hover_tip_timer()
         else:
             # Shell tray on Windows may ignore szTip until after the icon is shown (Qt NOTIFYICON).
             self.setToolTip(self._tray_tooltip())
+
+    def hide(self) -> None:
+        if self._hover_tip_timer is not None:
+            self._hover_tip_timer.stop()
+        self._set_hover_tip_visible(False)
+        super().hide()
+
+    def _ensure_hover_tip_timer(self) -> None:
+        if self._hover_tip_timer is not None:
+            self._hover_tip_timer.start()
+            return
+        self._hover_tip_timer = QtCore.QTimer(self)
+        self._hover_tip_timer.setInterval(150)
+        self._hover_tip_timer.timeout.connect(self._update_hover_tip)
+        self._hover_tip_timer.start()
+
+    def _set_hover_tip_visible(self, visible: bool) -> None:
+        if visible == self._hover_tip_visible:
+            return
+        self._hover_tip_visible = visible
+        if not visible:
+            QToolTip.hideText()
+
+    def _update_hover_tip(self) -> None:
+        if sys.platform != "win32" or not self.isVisible():
+            self._set_hover_tip_visible(False)
+            return
+
+        rect = self.geometry()
+        if rect.isNull() or not rect.isValid():
+            self._set_hover_tip_visible(False)
+            return
+
+        pos = QCursor.pos()
+        if rect.contains(pos):
+            QToolTip.showText(pos, self._tray_tooltip())
+            self._hover_tip_visible = True
+        else:
+            self._set_hover_tip_visible(False)
 
     def on_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
