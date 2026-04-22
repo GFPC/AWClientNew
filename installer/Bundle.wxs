@@ -3,7 +3,7 @@
      xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal">
 
   <Bundle Name="CtrlDesk"
-          Version="1.0.0"
+          Version="$(var.BundleVersion)"
           Manufacturer="CtrlDesk"
           UpgradeCode="6C0D5E4F-3A7B-6C0D-BE4F-5A7B8C0D5E4F">
 

@@ -2,7 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="CtrlDesk"
            Manufacturer="CtrlDesk"
-           Version="1.0.0"
+           Version="$(var.ProductVersion)"
            UpgradeCode="4A8B3C2D-1E5F-4A8B-9C2D-3E5F6A8B3C2D"
            Scope="perMachine"
            Codepage="1251">
@@ -87,11 +87,12 @@
                   Return="ignore"
                   Impersonate="no" />
 
-    <!-- Запуск aw-qt по «Готово» на ExitDialog. Путь через SetProperty — иначе WIX1077 на Property с [INSTALLFOLDER]. -->
+    <!-- Запуск aw-qt по «Готово» на ExitDialog. Свойство должно устанавливаться в UI sequence,
+         иначе Execute sequence не передаст путь кнопке Finish. -->
     <SetProperty Id="WixUnelevatedShellExecTarget"
                  Value="[INSTALLFOLDER]aw-qt.exe"
-                 After="InstallFinalize"
-                 Sequence="execute"
+                 Before="LaunchCtrlDeskAfterInstall"
+                 Sequence="ui"
                  Condition="NOT REMOVE" />
     <CustomAction Id="LaunchCtrlDeskAfterInstall"
                   BinaryRef="Wix4UtilCA_X64"

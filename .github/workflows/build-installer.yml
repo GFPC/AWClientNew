@@ -111,6 +111,18 @@ jobs:
           wix extension add WixToolset.Bal.wixext/4.0.6
           wix extension add WixToolset.Util.wixext/4.0.6
 
+      - name: Compute installer version
+        id: installer_version
+        shell: pwsh
+        run: |
+          $now = [DateTime]::UtcNow
+          $major = $now.Year - 2000
+          $minor = $now.Month
+          $build = ($now.Day * 1440) + ($now.Hour * 60) + $now.Minute + [int]${{ github.run_attempt }}
+          $version = "$major.$minor.$build"
+          Write-Host "Installer version: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Generate file components from dist/activitywatch
         shell: pwsh
         run: |
@@ -190,6 +202,7 @@ jobs:
       - name: Build MSI
         run: |
           wix build installer/Product.wxs installer/HarvestedFiles.wxs installer/TokenDlg.wxs `
+            -d ProductVersion=${{ steps.installer_version.outputs.version }} `
             -arch x64 `
             -culture ru-ru `
             -loc installer/WixUI_ru-ru.wxl `
@@ -227,6 +240,7 @@ jobs:
       - name: Build EXE bundle
         run: |
           wix build installer/Bundle.wxs `
+            -d BundleVersion=${{ steps.installer_version.outputs.version }} `
             -arch x64 `
             -ext WixToolset.Bal.wixext `
             -o agent_installer.exe
