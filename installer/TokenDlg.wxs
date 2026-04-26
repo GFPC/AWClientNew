@@ -13,6 +13,8 @@
       <DialogRef Id="MsiRMFilesInUse" />
       <DialogRef Id="PrepareDlg" />
       <DialogRef Id="ProgressDlg" />
+      <!-- В WixUI диалог называется ExitDialog, не ExitDlg — иначе WIX0094 при линковке. -->
+      <DialogRef Id="ExitDialog" />
       <DialogRef Id="ResumeDlg" />
       <DialogRef Id="UserExit" />
       <DialogRef Id="WelcomeDlg" />
@@ -37,6 +39,11 @@
       <Publish Dialog="MaintenanceTypeDlg"    Control="RepairButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
       <Publish Dialog="MaintenanceTypeDlg"    Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg"     Condition="1" />
       <Publish Dialog="MaintenanceTypeDlg"    Control="Back"         Event="NewDialog" Value="MaintenanceWelcomeDlg" Condition="1" />
+
+      <!-- Запуск aw-qt после успешной установки (тихая установка без UI сюда не попадает). -->
+      <Publish Dialog="ExitDialog" Control="Finish" Property="WixUnelevatedShellExecTarget" Value="[INSTALLFOLDER]aw-qt.exe" Order="1" Condition="NOT REMOVE" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="LaunchCtrlDeskAfterInstall" Order="2" Condition="NOT REMOVE" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" Condition="1" />
 
       <InstallUISequence>
         <Show Dialog="ResumeDlg"    Before="ProgressDlg" Condition="Resume" />

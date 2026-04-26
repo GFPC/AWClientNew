@@ -81,6 +81,24 @@ jobs:
         shell: bash
         run: cp installer/post-install.ps1 dist/activitywatch/post-install.ps1
 
+      - name: Ensure aw-qt tray icon assets in installer input
+        shell: pwsh
+        run: |
+          $mediaSrc = "aw-qt\media"
+          $mediaDst = "dist\activitywatch\media"
+          if (-not (Test-Path $mediaSrc -PathType Container)) {
+            Write-Error "Missing source tray assets: $mediaSrc"
+            exit 1
+          }
+          if (Test-Path $mediaDst) {
+            Remove-Item $mediaDst -Recurse -Force
+          }
+          Copy-Item -Path $mediaSrc -Destination $mediaDst -Recurse -Force
+
+      - name: Verify aw-qt tray icon assets in downloaded artifact
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package/verify-windows-tray-assets.ps1 -Root dist/activitywatch
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -93,6 +111,18 @@ jobs:
           wix extension add WixToolset.Bal.wixext/4.0.6
           wix extension add WixToolset.Util.wixext/4.0.6
 
+      - name: Compute installer version
+        id: installer_version
+        shell: pwsh
+        run: |
+          $now = [DateTime]::UtcNow
+          $major = $now.Year - 2000
+          $minor = $now.Month
+          $build = ($now.Day * 1440) + ($now.Hour * 60) + $now.Minute + [int]${{ github.run_attempt }}
+          $version = "$major.$minor.$build"
+          Write-Host "Installer version: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Generate file components from dist/activitywatch
         shell: pwsh
         run: pwsh -File scripts/package/generate-wix-harvest.ps1
@@ -100,6 +130,7 @@ jobs:
       - name: Build MSI
         run: |
           wix build installer/Product.wxs installer/HarvestedFiles.wxs installer/TokenDlg.wxs `
+            -d ProductVersion=${{ steps.installer_version.outputs.version }} `
             -arch x64 `
             -ext WixToolset.UI.wixext `
             -ext WixToolset.Util.wixext `
@@ -128,9 +159,14 @@ jobs:
           }
           Write-Host "MSI validation passed"
 
+      - name: Verify installed aw-qt tray icon assets
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/package/verify-windows-tray-assets.ps1 -Root "C:\Program Files\ctrldesk"
+
       - name: Build EXE bundle
         run: |
           wix build installer/Bundle.wxs `
+            -d BundleVersion=${{ steps.installer_version.outputs.version }} `
             -arch x64 `
             -ext WixToolset.Bal.wixext `
             -o agent_installer.exe

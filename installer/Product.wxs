@@ -2,7 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package Name="CtrlDesk"
            Manufacturer="CtrlDesk"
-           Version="1.0.0"
+           Version="$(var.ProductVersion)"
            UpgradeCode="4A8B3C2D-1E5F-4A8B-9C2D-3E5F6A8B3C2D"
            Scope="perMachine"
            Codepage="1251">
@@ -86,6 +86,14 @@
                   Execute="deferred"
                   Return="ignore"
                   Impersonate="no" />
+
+    <!-- Запуск aw-qt по «Готово» на ExitDialog. Target выставляется из UI через Publish Property,
+         чтобы использовать актуальный INSTALLFOLDER и не ссылаться на несуществующий UI action. -->
+    <CustomAction Id="LaunchCtrlDeskAfterInstall"
+                  BinaryRef="Wix4UtilCA_X64"
+                  DllEntry="WixUnelevatedShellExec"
+                  Execute="immediate"
+                  Return="ignore" />
 
     <InstallExecuteSequence>
       <Custom Action="WriteTokenToFile" Before="RunPostInstall" Condition="NOT REMOVE" />
