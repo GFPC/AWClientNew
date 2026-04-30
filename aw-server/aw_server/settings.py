@@ -4,6 +4,7 @@ from pathlib import Path
 from aw_core.dirs import get_config_dir
 
 # Default central server (GFP/TIM) before settings.json exists; overridden after user saves in Settings.
+# gfpsServerPort: fixed at 5700 for this product build (must match aw-webui GFPS_CENTRAL_PORT).
 CENTRAL_DEFAULTS = {
     "gfpsEnabled": True,
     "gfpsServerIP": "188.225.44.153",

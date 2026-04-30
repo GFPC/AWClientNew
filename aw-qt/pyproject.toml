@@ -13,7 +13,8 @@ packages = [
 aw-qt = "aw_qt:main"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+# Upper bound: PyInstaller (bundle group) supports Python <3.15; keeps Poetry resolver consistent.
+python = ">=3.8,<3.15"
 aw-core = "^0.5"
 
 pyobjc-framework-Cocoa = { version = "*", platform = "darwin" }
@@ -31,11 +32,18 @@ setuptools = "*"
 PyQt6 = "6.5.3"
 PyQt6-Qt6 = "6.5.3"
 
+# PyInstaller is only needed for packaged exe; not for local `python -m aw_qt` tray testing.
+# Use: poetry install --with pyqt --with bundle
+[tool.poetry.group.bundle]
+optional = true
+
+[tool.poetry.group.bundle.dependencies]
+pyinstaller = ">=6.6"
+
 [tool.poetry.dev-dependencies]
 mypy = "*"
 PyQt6-stubs = { git = "https://github.com/TilmanK/PyQt6-stubs", rev = "main" }
 flake8 = "*"
-pyinstaller = ">=6.6"
 types-click = "*"
 
 [tool.mypy]

@@ -73,6 +73,15 @@ def open_dir(d: str) -> None:
         subprocess.Popen(["xdg-open", d], env=env)
 
 
+def _tray_menu_advanced() -> bool:
+    """Full tray menu (API, modules, folders). Set CTRLDESK_TRAY_ADVANCED=1 for debugging."""
+    return os.environ.get("CTRLDESK_TRAY_ADVANCED", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
+
 class TrayIcon(QSystemTrayIcon):
     def __init__(
         self,
@@ -155,39 +164,39 @@ class TrayIcon(QSystemTrayIcon):
 
     def _build_rootmenu(self) -> None:
         menu = QMenu(self._parent)
+        advanced = _tray_menu_advanced()
 
         if self.testing:
             menu.addAction("Running in testing mode")  # .setEnabled(False)
             menu.addSeparator()
 
-        # openWebUIIcon = QIcon.fromTheme("open")
-        menu.addAction("Open Dashboard", lambda: open_webui(self.root_url))
-        menu.addAction("Open API Browser", lambda: open_apibrowser(self.root_url))
+        menu.addAction("Открыть", lambda: open_webui(self.root_url))
 
-        menu.addSeparator()
+        modules_menu: Optional[QMenu] = None
+        if advanced:
+            menu.addAction("Open API Browser", lambda: open_apibrowser(self.root_url))
+            menu.addSeparator()
+            modules_menu = menu.addMenu("Modules")
+            self._build_modulemenu(modules_menu)
+            menu.addSeparator()
+            menu.addAction(
+                "Open log folder", lambda: open_dir(aw_core.dirs.get_log_dir(None))
+            )
+            menu.addAction(
+                "Open config folder", lambda: open_dir(aw_core.dirs.get_config_dir(None))
+            )
+            menu.addSeparator()
 
-        modulesMenu = menu.addMenu("Modules")
-        self._build_modulemenu(modulesMenu)
-
-        menu.addSeparator()
-        menu.addAction(
-            "Open log folder", lambda: open_dir(aw_core.dirs.get_log_dir(None))
-        )
-        menu.addAction(
-            "Open config folder", lambda: open_dir(aw_core.dirs.get_config_dir(None))
-        )
-        menu.addSeparator()
-
-        exitIcon = QIcon.fromTheme(
+        exit_icon = QIcon.fromTheme(
             "application-exit", QIcon("media/application_exit.png")
         )
         # This check is an attempted solution to: https://github.com/ActivityWatch/activitywatch/issues/62
         # Seems to be in agreement with: https://github.com/OtterBrowser/otter-browser/issues/1313
         #   "it seems that the bug is also triggered when creating a QIcon with an invalid path"
-        if exitIcon.availableSizes():
-            menu.addAction(exitIcon, "Quit ActivityWatch", lambda: exit(self.manager))
+        if exit_icon.availableSizes():
+            menu.addAction(exit_icon, "Выйти", lambda: exit(self.manager))
         else:
-            menu.addAction("Quit ActivityWatch", lambda: exit(self.manager))
+            menu.addAction("Выйти", lambda: exit(self.manager))
 
         self.setContextMenu(menu)
 
@@ -205,15 +214,14 @@ class TrayIcon(QSystemTrayIcon):
             box.show()
 
         def rebuild_modules_menu() -> None:
-            for action in modulesMenu.actions():
+            if modules_menu is None:
+                return
+            for action in modules_menu.actions():
                 if action.isEnabled():
                     module: Module = action.data()
                     alive = module.is_alive()
                     action.setChecked(alive)
-            # TODO: Do it in a better way, singleShot isn't pretty...
             QtCore.QTimer.singleShot(2000, rebuild_modules_menu)
-
-        QtCore.QTimer.singleShot(2000, rebuild_modules_menu)
 
         def check_module_status() -> None:
             unexpected_exits = self.manager.get_unexpected_stops()
@@ -222,9 +230,10 @@ class TrayIcon(QSystemTrayIcon):
                     show_module_failed_dialog(module)
                     module.stop()
 
-            # TODO: Do it in a better way, singleShot isn't pretty...
-            QtCore.QTimer.singleShot(2000, rebuild_modules_menu)
+            QtCore.QTimer.singleShot(2000, check_module_status)
 
+        if modules_menu is not None:
+            QtCore.QTimer.singleShot(2000, rebuild_modules_menu)
         QtCore.QTimer.singleShot(2000, check_module_status)
 
     def _build_modulemenu(self, moduleMenu: QMenu) -> None:

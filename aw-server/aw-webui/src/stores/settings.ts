@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import moment, { Moment } from 'moment';
+import { GFPS_CENTRAL_PORT } from '~/constants/gfps';
 import { getClient } from '~/util/awclient';
 import { Category, defaultCategories, cleanCategory } from '~/util/classes';
 import { View, defaultViews } from '~/stores/views';
@@ -80,7 +81,7 @@ export const useSettingsStore = defineStore('settings', {
     // Defaults match aw_server/settings.py CENTRAL_DEFAULTS until server settings load
     gfpsEnabled: true,
     gfpsServerIP: '188.225.44.153',
-    gfpsServerPort: 5700,
+    gfpsServerPort: GFPS_CENTRAL_PORT,
   }),
 
   getters: {

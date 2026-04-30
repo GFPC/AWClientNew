@@ -400,6 +400,7 @@ class ServerAPI:
 
         `gfpsEnabled` only gates heartbeat forwarding via `forward_heartbeat_to_central`.
         Missing host/port fall back to CENTRAL_DEFAULTS in settings.py.
+        Product note: central port is always 5700 (see CENTRAL_DEFAULTS / web UI GFPS_CENTRAL_PORT).
         """
         raw_ip = self.settings.get("gfpsServerIP")
         raw_port = self.settings.get("gfpsServerPort")

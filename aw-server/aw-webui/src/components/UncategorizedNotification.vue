@@ -13,11 +13,13 @@ div
 <script lang="ts">
 import { mapState } from 'pinia';
 import { useActivityStore } from '~/stores/activity';
+import { useUiModeStore } from '~/stores/uiMode';
 
 export default {
   name: 'aw-uncategorized-notification',
   computed: {
     ...mapState(useActivityStore, ['uncategorizedDuration']),
+    ...mapState(useUiModeStore, ['advancedEmployeeUi']),
     ratio() {
       console.log(this.uncategorizedDuration);
       return this.uncategorizedDuration
@@ -35,7 +37,7 @@ export default {
       const overRatio = this.ratio > 0.3;
       // if there's a category filter (url has category query param), don't show it
       const hasCategoryFilter = this.$route.query.category;
-      return overTotal && overRatio && !hasCategoryFilter;
+      return overTotal && overRatio && !hasCategoryFilter && this.advancedEmployeeUi;
     },
   },
 };

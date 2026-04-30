@@ -11,9 +11,11 @@ div#wrapper(v-if="loaded")
 </template>
 
 <script lang="ts">
+import pinia from '~/stores';
 import { useSettingsStore } from '~/stores/settings';
 import { useServerStore } from '~/stores/server';
 import { useUserStore } from '~/stores/user';
+import { useUiModeStore } from '~/stores/uiMode';
 // if vite is used, you can import css file as module
 //import darkCssUrl from '../static/dark.css?url';
 //import darkCssContent from '../static/dark.css?inline';
@@ -33,6 +35,8 @@ export default {
   },
 
   async beforeCreate() {
+    useUiModeStore(pinia).tryHashUnlock();
+
     // Get Theme From LocalStorage
     const settingsStore = useSettingsStore();
     await settingsStore.ensureLoaded();

@@ -1,8 +1,10 @@
 <template lang="pug">
   div.user-account-page
     header.user-account-page__hero.mb-4.mt-4
-      h2.user-account-page__title Account
-      p.user-account-page__lead(v-if="userStore.gfpsAccountMode === 'ready'")
+      h2.user-account-page__title {{ simpleEmployeeUi ? 'Профиль' : 'Account' }}
+      p.user-account-page__lead(v-if="userStore.gfpsAccountMode === 'ready' && simpleEmployeeUi")
+        | Ваши ФИО на центральном сервере (только просмотр).
+      p.user-account-page__lead(v-else-if="userStore.gfpsAccountMode === 'ready'")
         | Profile from the GFP server. Identity fields are read-only; update email, username, and teams here.
 
     //- Loading
@@ -32,8 +34,31 @@
       b-alert(v-if="error", variant="danger", dismissible, show, @dismissed="error = ''")
         | {{ error }}
 
-      //- ——— Registered user ———
-      div(v-if="userStore.isExistOnServer && userStore._loaded")
+      //- Registered — только ФИО для режима сотрудника
+      template(v-if="userStore.isExistOnServer && userStore._loaded && simpleEmployeeUi")
+        b-card.aw-account-card.mb-3
+          template(#header)
+            div.aw-account-card__head
+              .aw-account-card__icon.aw-account-card__icon--identity
+                icon(name="id-card")
+              div
+                .aw-account-card__title ФИО
+                .aw-account-card__subtitle Данные учётной записи на сервере.
+
+          b-card-body.aw-account-card__body
+            div.row
+              div.col-md-4.mb-3
+                .aw-field-label Фамилия
+                .aw-readonly {{ userStore.lastName || '—' }}
+              div.col-md-4.mb-3
+                .aw-field-label Имя
+                .aw-readonly {{ userStore.firstName || '—' }}
+              div.col-md-4.mb-3
+                .aw-field-label Отчество
+                .aw-readonly {{ userStore.middleName || '—' }}
+
+      //- Registered — полный интерфейс
+      template(v-else-if="userStore.isExistOnServer && userStore._loaded")
         //- no `no-body` here so FIO block always renders inside the card body
         b-card.aw-account-card.mb-3
           template(#header)
@@ -109,8 +134,62 @@
           b-button(variant="dark", class="aw-btn-save", @click="submit")
             | Save changes
 
-      //- ——— Not registered ———
-      div(v-if="!userStore.isExistOnServer && userStore._loaded")
+      //- ——— Not registered ——— (простой режим)
+      template(v-if="!userStore.isExistOnServer && userStore._loaded && simpleEmployeeUi")
+        b-card.aw-account-card.mb-3(no-body)
+          template(#header)
+            div.aw-account-card__head
+              .aw-account-card__icon.aw-account-card__icon--welcome
+                icon(name="user-plus")
+              div
+                .aw-account-card__title Приглашение
+                .aw-account-card__subtitle
+                  | Введите данные и токен приглашения от администратора. Если установщик уже записал токен — перезапустите службу или вставьте токен ниже.
+
+          b-card-body.aw-account-card__body
+            div.row
+              div.col-md-6.mb-3.mb-md-0
+                label.aw-field-label(for="reg-username") Логин
+                b-form-input#reg-username.aw-input(v-model="username", placeholder="Логин")
+              div.col-md-6
+                label.aw-field-label(for="reg-email") Электронная почта
+                b-form-input#reg-email.aw-input(v-model="email", type="email", placeholder="you@company.com")
+
+        b-card.aw-account-card.mb-3(no-body)
+          template(#header)
+            div.aw-account-card__head
+              .aw-account-card__icon.aw-account-card__icon--welcome
+                icon(name="key")
+              div
+                .aw-account-card__title Токен приглашения
+                .aw-account-card__subtitle
+                  | Вставьте одноразовый токен из письма или от администратора.
+
+          b-card-body.aw-account-card__body
+            b-alert(v-if="claimError", variant="danger", dismissible, show, @dismissed="claimError = ''")
+              | {{ claimError }}
+            label.aw-field-label(for="inv-token") Токен
+            b-form-textarea#inv-token.aw-input(
+              v-model="invitationToken",
+              rows="3",
+              placeholder="Вставьте токен",
+              :disabled="claimBusy"
+            )
+            div.d-flex.justify-content-end.mt-3
+              b-button(
+                variant="outline-dark",
+                :disabled="claimBusy || !invitationToken.trim()",
+                @click="submitClaimInvitation"
+              )
+                span(v-if="claimBusy") Применение…
+                span(v-else) Применить приглашение
+
+        div.d-flex.justify-content-end.pt-1
+          b-button(variant="dark", class="aw-btn-save", @click="submitRegister")
+            | Зарегистрировать устройство
+
+      //- ——— Not registered ——— полный UI
+      template(v-else-if="!userStore.isExistOnServer && userStore._loaded")
         b-card.aw-account-card.mb-3(no-body)
           template(#header)
             div.aw-account-card__head
@@ -124,11 +203,11 @@
           b-card-body.aw-account-card__body
             div.row
               div.col-md-6.mb-3.mb-md-0
-                label.aw-field-label(for="reg-username") Username
-                b-form-input#reg-username.aw-input(v-model="username", placeholder="Your username")
+                label.aw-field-label(for="reg-username-full") Username
+                b-form-input#reg-username-full.aw-input(v-model="username", placeholder="Your username")
               div.col-md-6
-                label.aw-field-label(for="reg-email") Email
-                b-form-input#reg-email.aw-input(v-model="email", type="email", placeholder="you@company.com")
+                label.aw-field-label(for="reg-email-full") Email
+                b-form-input#reg-email-full.aw-input(v-model="email", type="email", placeholder="you@company.com")
 
         b-card.aw-account-card.mb-3(no-body)
           template(#header)
@@ -143,8 +222,8 @@
           b-card-body.aw-account-card__body
             b-alert(v-if="claimError", variant="danger", dismissible, show, @dismissed="claimError = ''")
               | {{ claimError }}
-            label.aw-field-label(for="inv-token") Token
-            b-form-textarea#inv-token.aw-input(
+            label.aw-field-label(for="inv-token-full") Token
+            b-form-textarea#inv-token-full.aw-input(
               v-model="invitationToken",
               rows="3",
               placeholder="Paste your invitation token here",
@@ -180,7 +259,9 @@
 </template>
 
 <script lang="ts">
+import { mapState } from 'pinia';
 import { useUserStore } from '~/stores/user';
+import { useUiModeStore } from '~/stores/uiMode';
 import TeamsMembershipCard from '@/components/TeamsMembershipCard.vue';
 import 'vue-awesome/icons/id-card.js';
 import 'vue-awesome/icons/envelope.js';
@@ -201,6 +282,9 @@ export default {
       claimBusy: false,
       claimError: '',
     };
+  },
+  computed: {
+    ...mapState(useUiModeStore, ['advancedEmployeeUi', 'simpleEmployeeUi']),
   },
   watch: {
     'userStore.gfpsAccountMode'(mode: string, prev: string) {

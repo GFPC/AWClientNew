@@ -1,6 +1,9 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
 
+import pinia from './stores';
+import { useUiModeStore } from './stores/uiMode';
+
 const Home = () => import('./views/Home.vue');
 
 // Activity views for desktop
@@ -77,6 +80,39 @@ const router = new VueRouter({
       component: NotFound,
     },
   ],
+});
+
+const SIMPLE_MODE_BLOCKED = [
+  '/buckets',
+  '/trends',
+  '/report',
+  '/query',
+  '/alerts',
+  '/timespiral',
+  '/stopwatch',
+  '/search',
+  '/graph',
+  '/dev',
+];
+
+router.beforeEach((to, _from, next) => {
+  const uiMode = useUiModeStore(pinia);
+  if (uiMode.advancedEmployeeUi) {
+    next();
+    return;
+  }
+  const path = to.path || '';
+  if (path.startsWith('/settings/category-builder')) {
+    next({ path: '/settings', replace: true });
+    return;
+  }
+  for (const p of SIMPLE_MODE_BLOCKED) {
+    if (path === p || path.startsWith(p + '/')) {
+      next({ path: '/home', replace: true });
+      return;
+    }
+  }
+  next();
 });
 
 export default router;

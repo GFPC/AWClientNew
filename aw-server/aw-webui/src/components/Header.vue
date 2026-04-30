@@ -15,14 +15,14 @@ div(:class="{'fixed-top-padding': fixedTopMenu}")
         b-nav-item(v-if="activityViews && activityViews.length === 1", v-for="view in activityViews", :key="view.name", :to="view.pathUrl")
           div.px-2.px-lg-1
             icon(name="calendar-day")
-            | Activity
+            | {{ activityNavLabel }}
 
         // If multiple (or no) activity views are available
         b-nav-item-dropdown(v-if="!activityViews || activityViews.length !== 1")
           template(slot="button-content")
             div.d-inline.px-2.px-lg-1
               icon(name="calendar-day")
-              | Activity
+              | {{ activityNavLabel }}
           b-dropdown-item(v-if="activityViews === null", disabled)
             span.text-muted Loading...
             br
@@ -37,7 +37,7 @@ div(:class="{'fixed-top-padding': fixedTopMenu}")
         b-nav-item(to="/timeline" style="font-color: #000;")
           div.px-2.px-lg-1
             icon(name="stream")
-            | Timeline
+            | {{ timelineNavLabel }}
 
         //b-nav-item(to="/stopwatch")
           div.px-2.px-lg-1
@@ -47,13 +47,13 @@ div(:class="{'fixed-top-padding': fixedTopMenu}")
       // Brand on large screens (centered)
       b-navbar-nav.abs-center.d-none.d-lg-block
         b-navbar-brand(to="/" style="background-color: transparent;")
-          span.ml-2.align-middle(style="font-size: 1.0em; color: #000;") Home
+          span.ml-2.align-middle(style="font-size: 1.0em; color: #000;") {{ homeNavLabel }}
 
       b-navbar-nav.ml-auto
         b-nav-item(to="/user")
           div.px-2.px-lg-1
             icon(name="user")
-            | Account
+            | {{ accountNavLabel }}
         //b-nav-item-dropdown
           template(slot="button-content")
             div.d-inline.px-2.px-lg-1
@@ -82,14 +82,14 @@ div(:class="{'fixed-top-padding': fixedTopMenu}")
             icon(name="project-diagram")
             | Graph
 
-        b-nav-item(to="/buckets")
+        b-nav-item(v-if="advancedEmployeeUi", to="/buckets")
           div.px-2.px-lg-1
             icon(name="database")
             | Raw Data
         b-nav-item(to="/settings")
           div.px-2.px-lg-1
             icon(name="cog")
-            | Settings
+            | {{ settingsNavLabel }}
 </template>
 
 <style lang="scss" scoped>
@@ -128,6 +128,7 @@ import _ from 'lodash';
 
 import { mapState } from 'pinia';
 import { useSettingsStore } from '~/stores/settings';
+import { useUiModeStore } from '~/stores/uiMode';
 import { useBucketsStore } from '~/stores/buckets';
 import { IBucket } from '~/util/interfaces';
 
@@ -142,6 +143,22 @@ export default {
   },
   computed: {
     ...mapState(useSettingsStore, ['devmode']),
+    ...mapState(useUiModeStore, ['advancedEmployeeUi', 'simpleEmployeeUi']),
+    activityNavLabel() {
+      return this.simpleEmployeeUi ? 'Экранное время' : 'Activity';
+    },
+    accountNavLabel() {
+      return this.simpleEmployeeUi ? 'Профиль' : 'Account';
+    },
+    settingsNavLabel() {
+      return this.simpleEmployeeUi ? 'Настройки' : 'Settings';
+    },
+    homeNavLabel() {
+      return this.simpleEmployeeUi ? 'Главная' : 'Home';
+    },
+    timelineNavLabel() {
+      return this.simpleEmployeeUi ? 'Хронология' : 'Timeline';
+    },
   },
   mounted: async function () {
     const bucketStore = useBucketsStore();
